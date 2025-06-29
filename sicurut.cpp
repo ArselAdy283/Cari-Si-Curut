@@ -2,132 +2,202 @@
 #include <cstdlib>
 #include <ctime>
 #include <vector>
+#include <limits>
+#include <fstream>
+
+#ifdef _WIN32
+    #define CLEAR "cls"
+    #define PAUSE "pause"
+#else
+    #define CLEAR "clear"
+    #define PAUSE "read -p 'Press Enter to continue...' var"
+#endif
+
 using namespace std;
 
-class namaPem {
+string player;
+
+class NamaPem {
 public:
     string nama;
     string kelas;
     int noAbsen;
 
-    namaPem(string n, string k, int na) {
-        nama = n;
-        kelas = k;
-        noAbsen = na;
-    }
+    NamaPem(string n, string k, int na) : nama(n), kelas(k), noAbsen(na) {}
 
-    void infoPem() {
+    void infoPem() const {
         cout << "Nama     : " << nama << endl;
         cout << "No Absen : " << noAbsen << endl;
         cout << "Kelas    : " << kelas << endl;
     }
 };
 
-int main() {
-    int pilihMenu;
-    srand(time(0));
+void tampilkanMenu() {
+    system(CLEAR);
+    cout << "===================================================\n";
+    cout << "=================[ CARI SI CURUT ]=================\n";
+    cout << "===================================================\n";
+    cout << "                     MAIN    (1)                   \n\n";
+    cout << "                     PEMBUAT (2)                   \n\n";
+    cout << "                     KELUAR  (3)                   \n";
+    cout << "===================================================\n";
+    cout << "Pilih menu [1/2/3]: ";
+}
+
+int loadPoin() {
+    ifstream file(player + ".txt");
+    int poin = 0;
+    if (file.is_open()) {
+        file >> poin;
+        file.close();
+    }
+    return poin;
+}
+
+void savePoin(int poin) {
+    ofstream file(player + ".txt");
+    if (file.is_open()) {
+        file << poin;
+        file.close();
+    }
+}
+
+int loadLevel() {
+    ifstream file(player + "_level.txt");
+    int level = 1;
+    if (file.is_open()) {
+        file >> level;
+        file.close();
+    }
+    return level;
+}
+
+void saveLevel(int level) {
+    ofstream file(player + "_level.txt");
+    if (file.is_open()) {
+        file << level;
+        file.close();
+    }
+}
+
+void mainGame() {
+    int level = loadLevel();
+    int poin = loadPoin();
+    int jumlahGoa = 2 + (level - 1);
 
     while (true) {
-        cout << "===================================================" << endl;
-        cout << "===============[ MENCARI SI CURUT ]================" << endl;
-        cout << "===================================================" << endl;
-        cout << "                     MAIN    (1)                   " << "\n" << endl;
-        cout << "                     PEMBUAT (2)                   " << "\n" << endl;
-        cout << "                     KELUAR  (3)                   " << endl;
-        cout << "===================================================" << endl;
-        cout << "Pilih menu [1/2/3]: ";
+        int posisiCurut = rand() % jumlahGoa;
+        vector<string> goaKosong(jumlahGoa, "|_|");
+        vector<string> goaCurut(jumlahGoa, "|_|");
+
+        goaCurut[posisiCurut] = "|>,<|";
+
+        cout << "LEVEL: " << level << endl;
+        cout << "POIN: " << poin << "\n\n";
+        cout << "Hai " << player << ", Coba cari SI CURUT di salah satu goa ini:\n";
+        for (const auto& goa : goaKosong) {
+            cout << goa << " ";
+        }
+        cout << endl;
+
+        int pilihanTebakan;
+        cout << "\nPilih goa nomor berapa yang ada SI CURUT nya! [1 sampai " << jumlahGoa << "]: ";
+        cin >> pilihanTebakan;
+
+        if (cin.fail() || pilihanTebakan < 1 || pilihanTebakan > jumlahGoa) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            system(CLEAR);
+            cout << "Masukkan angka yang benar antara 1 dan " << jumlahGoa << ".\n";
+            continue;
+        }
+
+        system(CLEAR);
+        cout << "LEVEL: " << level << endl;
+        cout << "POIN: " << poin << "\n\n\n";
+        for (const auto& goa : goaCurut) {
+            cout << goa << " ";
+        }
+        cout << endl;
+
+        if (pilihanTebakan - 1 == posisiCurut) {
+            cout << "\nSelamat, kamu menang! SI CURUT ada di goa nomor " << posisiCurut + 1 << "\n";
+            poin++;
+            savePoin(poin);
+
+            if (poin % 5 == 0) {
+                level++;
+                jumlahGoa++;
+                saveLevel(level);
+            }
+        } else {
+            cout << "\nYahhh KALAH! SI CURUT ada di goa nomor " << posisiCurut + 1;
+            cout << ", kamu malah milih " << pilihanTebakan << " :(\n";
+        }
+
+        char mainLagi;
+        cout << "\n\nKamu mau bermain lagi? [y/n]: ";
+        cin >> mainLagi;
+        if (mainLagi == 'n' || mainLagi == 'N') {
+            system(CLEAR);
+            break;
+        }
+        system(CLEAR);
+    }
+}
+
+void tampilkanPembuat() {
+    system(CLEAR);
+    vector<NamaPem> pembuat = {
+        {"Adinda Naswa R.", "X RPL 1", 1},
+        {"Agung Ridho A.", "X RPL 1", 2},
+        {"Ega Adyatma P.", "X RPL 1", 23},
+        {"Esa Farellio", "X RPL 1", 26}
+    };
+
+    for (const auto& p : pembuat) {
+        p.infoPem();
+        cout << "===========================\n";
+    }
+    system(PAUSE);
+    system(CLEAR);
+}
+
+int main() {
+    srand(time(0));
+    cout << "Siapa namamu? ";
+    getline(cin, player);
+
+    int pilihMenu;
+
+    while (true) {
+        tampilkanMenu();
         cin >> pilihMenu;
 
+        if (cin.fail()) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            system(CLEAR);
+            cout << "Pilihan tidak valid. Masukkan angka 1, 2, atau 3.\n";
+            continue;
+        }
+
         switch (pilihMenu) {
-        case 1: {
-            system("cls");
-            int level = 1;
-            int poin = 0;
-            int jumlahGoa = 2;
-
-            while (true) {
-                string bentukGoa = "|_|";
-                int posisiCurut = rand() % jumlahGoa;
-
-                vector<string> goaKosong(jumlahGoa, bentukGoa);
-                vector<string> goaCurut(jumlahGoa, bentukGoa);
-
-                goaCurut[posisiCurut] = "|>,<|";
-
-                cout << "LEVEL: " << level << endl;
-                cout << "POIN: " << poin << "\n" << endl;
-                cout << "Coba kamu cari SI CURUT di salah satu goa ini:\n";
-                for (int i = 0; i < jumlahGoa; i++) {
-                    cout << goaKosong[i] << " ";
-                }
-                cout << endl;
-
-                int pilihanTebakan;
-                cout << "\nPilih goa nomer berapa yang ada SI CURUT nya! [1 sampai " << jumlahGoa << "]: ";
-                cin >> pilihanTebakan;
-
-                if (pilihanTebakan < 1 || pilihanTebakan > jumlahGoa) {
-                    system("cls");
-                    cout << "Masukkan angka antara 1 dan " << jumlahGoa << ".\n";
-                    continue;
-                }
-
-                if (pilihanTebakan - 1 == posisiCurut) {
-                    cout << "\n";
-                    for (int i = 0; i < jumlahGoa; i++) {
-                        cout << goaCurut[i] << " ";
-                    }
-                    cout << "\nSelamat, kamu menang! SI CURUT ada di goa nomer " << posisiCurut + 1 << "\n";
-                    poin += 1;
-                 
-                    if (poin % 5 == 0) {
-                        level += 1;
-                        jumlahGoa++;
-                    }
-                } else {
-                    cout << "\n";
-                    for (int i = 0; i < jumlahGoa; i++) {
-                        cout << goaCurut[i] << " ";
-                    }
-                    cout << "\nYahhh KALAH! SI CURUT ada di goa nomer " << posisiCurut + 1 << ", kamu malah milih " << pilihanTebakan << " :(\n";
-                }
-
-                char mainLagi;
-                cout << "\n\nKamu mau bermain lagi? [y/n]: ";
-                cin >> mainLagi;
-                system("cls");
-                if (mainLagi == 'n' || mainLagi == 'N') {
-                    system("cls");
-                    break;
-                }
-            }
-            break;
-        }
-        case 2: {
-            system("cls");
-            namaPem pembuat1("Adinda Naswa R.", "X RPL 1", 1);
-            namaPem pembuat2("Agung Ridho A.", "X RPL 1", 2);
-            namaPem pembuat3("Ega Adyatma P.", "X RPL 1", 23);
-            namaPem pembuat4("Esa Farellio", "X RPL 1", 26);
-
-            pembuat1.infoPem();
-            cout << "===========================" << endl;
-            pembuat2.infoPem();
-            cout << "===========================" << endl;
-            pembuat3.infoPem();
-            cout << "===========================" << endl;
-            pembuat4.infoPem();
-            cout << "===========================\n" << endl;
-            break;
-        }
-        case 3: {
-            system("cls");
-            cout << "\nTERIMAKASIH SUDAH BERMAIN!\n";
-            return 0;
-        }
-        default:
-            system("cls");
-            cout << "Pilihan tidak valid. Silakan pilih 1, 2, atau 3.\n";
+            case 1:
+                system(CLEAR);
+                mainGame();
+                break;
+            case 2:
+                tampilkanPembuat();
+                break;
+            case 3:
+                system(CLEAR);
+                cout << "\nTERIMAKASIH SUDAH BERMAIN!\n";
+                system(PAUSE);
+                return 0;
+            default:
+                system(CLEAR);
+                cout << "Pilihan tidak valid. Silakan pilih 1, 2, atau 3.\n";
         }
     }
     return 0;
